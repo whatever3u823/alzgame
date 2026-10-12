@@ -65,30 +65,104 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
     max(16px, env(safe-area-inset-left, 0px));
 }
 
-/* ---------- Start screen: the whole screen is one button ---------- */
-#start {
-  border: 0;
-  background: var(--sky);
-  cursor: pointer;
+/* ---------- Home: the caregiver picks a game. Three big tiles, nothing else. ---------- */
+#home { overflow-y: auto; }
+.home-wrap {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3vmin;
+}
+.home-title {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(28px, 6vmin, 52px);
+  line-height: 1.2;
+}
+.tiles {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(150px, 1fr);
+  gap: 3vmin;
+}
+@media (orientation: landscape) and (min-width: 700px) {
+  .tiles { grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(220px, 1fr); }
+}
+.tile {
+  min-width: 0;
+  border: 3px solid var(--line);
+  border-radius: 28px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 rgba(23, 41, 58, .08);
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5vmin;
+  gap: 1.5vmin;
+  padding: 2.5vmin;
   text-align: center;
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease;
 }
-#start .big-dot {
-  width: min(48vmin, 320px);
+.tile:active { transform: scale(.98); border-color: var(--deep); }
+.tile.last { border-color: var(--deep); }
+.tile-art {
+  height: clamp(48px, 11vmin, 110px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  pointer-events: none;
+}
+.tile-art.pics {
+  font-size: clamp(40px, 9.5vmin, 96px);
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+.tile-art.dots i {
+  display: block;
+  height: 100%;
   aspect-ratio: 1;
-  max-width: 100%;
-  border-radius: 50%;
-  background: var(--yes);
-  box-shadow: 0 0 0 3vmin rgba(47, 143, 91, .18);
-  animation: breathe 3.2s ease-in-out infinite;
+  border-radius: 22%;
 }
-#start .label {
+.tile-art.blank {
   font-size: clamp(30px, 7vmin, 64px);
   font-weight: 700;
-  line-height: 1.2;
-  text-wrap: balance;
+}
+.tile-art.blank span {
+  display: inline-block;
+  width: 2.2em;
+  border-bottom: 0.12em solid currentColor;
+  margin-left: .2em;
+}
+.tile-name {
+  font-size: clamp(26px, 5.4vmin, 46px);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.tile-eg {
+  font-size: clamp(17px, 3vmin, 24px);
+  color: var(--ink-soft);
+}
+.home-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 28px;
+}
+.quiet {
+  border: 0;
+  background: transparent;
+  padding: 12px 8px;
+  font-size: 19px;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
 }
 
 /* ---------- Game screen ---------- */
@@ -250,6 +324,7 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
   padding: 18px 24px; border-radius: 16px; border: 0; background: var(--deep); color: var(--paper);
   font-size: 22px; font-weight: 700; cursor: pointer;
 }
+.secondary { background: var(--paper); color: var(--deep); border: 3px solid var(--deep); }
 .note { font-size: 15px !important; }
 
 @keyframes breathe { 0%, 100% { transform: translate(var(--tx, 0), var(--ty, 0)) scale(1); } 50% { transform: translate(var(--tx, 0), var(--ty, 0)) scale(1.05); } }
@@ -265,10 +340,32 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
 </head>
 <body>
 
-<button id="start" class="screen" type="button" aria-label="Touch here to begin">
-  <span class="big-dot" aria-hidden="true"></span>
-  <span class="label">Touch here to begin</span>
-</button>
+<div id="home" class="screen">
+  <div class="home-wrap">
+    <h1 class="home-title">Choose a game</h1>
+    <div class="tiles">
+      <button type="button" class="tile" data-game="pictures">
+        <span class="tile-art pics" aria-hidden="true">🍎&#8203;🐕&#8203;🏠</span>
+        <span class="tile-name">Pictures</span>
+        <span class="tile-eg">“Touch the apple”</span>
+      </button>
+      <button type="button" class="tile" data-game="colors">
+        <span class="tile-art dots" aria-hidden="true"><i style="background:#D0312D"></i><i style="background:#1F5BC4"></i><i style="background:#F5C400"></i></span>
+        <span class="tile-name">Colors</span>
+        <span class="tile-eg">“Touch the blue one”</span>
+      </button>
+      <button type="button" class="tile" data-game="sayings">
+        <span class="tile-art blank" aria-hidden="true">little<span></span></span>
+        <span class="tile-name">Fill in the blank</span>
+        <span class="tile-eg">“Twinkle, twinkle, little …”</span>
+      </button>
+    </div>
+    <div class="home-foot">
+      <button type="button" class="quiet" data-game="touch">Simplest: touch the circle</button>
+      <button type="button" class="quiet" id="open-settings">Settings</button>
+    </div>
+  </div>
+</div>
 
 <main id="game" class="screen" hidden>
   <button id="prompt" type="button" aria-live="polite"></button>
@@ -286,16 +383,9 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
 <div id="settings" class="screen" hidden>
   <div class="wrap">
     <h1>Caregiver settings</h1>
-    <p>Only you should see this screen. To open it again, press and hold the faint circle in the top right corner for 3 seconds.</p>
+    <p>During a game, press and hold the faint circle in the top right corner for 3 seconds to get here. A quick tap does nothing, so the player won't open it by accident.</p>
 
-    <section>
-      <h2>Activities</h2>
-      <p class="note">The game moves through the ones you tick, a few turns of each.</p>
-      <label class="opt"><input type="checkbox" id="act-pictures"><span>Pictures<small>“Touch the apple.” Everyday objects and animals.</small></span></label>
-      <label class="opt"><input type="checkbox" id="act-colors"><span>Colours<small>“Touch the blue one.”</small></span></label>
-      <label class="opt"><input type="checkbox" id="act-sayings"><span>Old sayings and songs<small>“Twinkle, twinkle, little …” then pick the word that finishes it.</small></span></label>
-      <label class="opt"><input type="checkbox" id="act-touch"><span>Touch the circle<small>The simplest one. A single circle appears; touching it is always right.</small></span></label>
-    </section>
+    <button type="button" class="primary secondary" id="go-home">Choose a different game</button>
 
     <section>
       <h2>How many answers to show</h2>
@@ -387,19 +477,17 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
 
   const STORE_KEY = 'gentle-games:settings:v1';
   const DEFAULTS = {
-    activities: { pictures: true, colors: true, sayings: true, touch: false },
     choices: 2,
     voice: true,
     praise: true,
     chime: true,
   };
-  const ROUNDS_PER_ACTIVITY = 5;
 
   function loadSettings() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (saved && typeof saved === 'object') {
-        return { ...DEFAULTS, ...saved, activities: { ...DEFAULTS.activities, ...(saved.activities || {}) } };
+        return { ...DEFAULTS, ...saved };
       }
     } catch (e) { /* storage unavailable: use defaults */ }
     return structuredCloneSafe(DEFAULTS);
@@ -536,40 +624,19 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
   const promptEl = $('prompt');
   const boardEl = $('board');
 
-  let order = [];
-  let activityIndex = 0;
-  let roundsInActivity = 0;
+  let currentGame = null;
   let round = null;
   let locked = false;
   let idleTimer = null;
   let hintsGiven = 0;
 
-  function enabledActivities() {
-    const list = Object.keys(ROUND_MAKERS).filter(k => settings.activities[k]);
-    return list.length ? list : ['pictures'];
-  }
-
-  function nextActivity() {
-    if (roundsInActivity >= ROUNDS_PER_ACTIVITY) {
-      roundsInActivity = 0;
-      activityIndex = (activityIndex + 1) % order.length;
-    }
-    roundsInActivity++;
-    return order[activityIndex % order.length];
-  }
-
-  function resetOrder() {
-    order = enabledActivities();
-    activityIndex = 0;
-    roundsInActivity = 0;
-  }
-
   function newRound() {
     clearTimeout(idleTimer);
+    // A turn may finish just as the caregiver leaves the game; don't start another behind their back.
+    if (!currentGame || $('game').hidden || !$('settings').hidden) return;
     hintsGiven = 0;
     locked = false;
-    const activity = nextActivity();
-    round = ROUND_MAKERS[activity](settings.choices);
+    round = ROUND_MAKERS[currentGame](settings.choices);
     render();
     speak(round.say);
     armIdleHint();
@@ -675,17 +742,44 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
     try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) { /* not available */ }
   }
 
-  $('start').addEventListener('click', () => {
+  function startGame(game) {
     unlockAudio();
     // On iPhone the voice only works if it is first used straight from a touch.
     if (synth) { try { synth.cancel(); synth.speak(new SpeechSynthesisUtterance('')); } catch (e) {} }
     keepAwake();
-    $('start').hidden = true;
+    currentGame = game;
+    lastTarget = null;
+    try { localStorage.setItem(LAST_GAME_KEY, game); } catch (e) { /* ignore */ }
+    document.querySelectorAll('.tile').forEach(t => t.classList.toggle('last', t.dataset.game === game));
+    $('home').hidden = true;
+    $('settings').hidden = true;
     $('game').hidden = false;
     $('corner').hidden = false;
-    resetOrder();
     newRound();
-  });
+  }
+
+  function goHome() {
+    clearTimeout(idleTimer);
+    if (synth) synth.cancel();
+    currentGame = null;
+    round = null;
+    $('game').hidden = true;
+    $('corner').hidden = true;
+    $('settings').hidden = true;
+    $('home').hidden = false;
+    $('home').scrollTop = 0;
+  }
+
+  document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => startGame(b.dataset.game)));
+  $('open-settings').addEventListener('click', openSettings);
+
+  // Gently mark the game that was played last time, so the caregiver can find it quickly.
+  const LAST_GAME_KEY = 'gentle-games:last-game';
+  try {
+    const last = localStorage.getItem(LAST_GAME_KEY);
+    const tile = last && document.querySelector('.tile[data-game="' + last + '"]');
+    if (tile) tile.classList.add('last');
+  } catch (e) { /* ignore */ }
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !$('game').hidden) {
@@ -721,25 +815,20 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
     clearTimeout(idleTimer);
     if (synth) synth.cancel();
     syncSettingsForm();
+    // From the home page there is no game to go back to.
+    $('close-settings').textContent = currentGame ? 'Back to the game' : 'Done';
+    $('go-home').hidden = !currentGame;
     $('settings').hidden = false;
     $('settings').scrollTop = 0;
   }
 
   function syncSettingsForm() {
-    for (const k of Object.keys(ROUND_MAKERS)) $('act-' + k).checked = !!settings.activities[k];
     $('opt-voice').checked = settings.voice;
     $('opt-praise').checked = settings.praise;
     $('opt-chime').checked = settings.chime;
     document.querySelectorAll('#choices-seg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === settings.choices)));
   }
 
-  for (const k of Object.keys(ROUND_MAKERS)) {
-    $('act-' + k).addEventListener('change', e => {
-      settings.activities[k] = e.target.checked;
-      if (!Object.values(settings.activities).some(Boolean)) { settings.activities[k] = true; e.target.checked = true; }
-      saveSettings();
-    });
-  }
   [['opt-voice', 'voice'], ['opt-praise', 'praise'], ['opt-chime', 'chime']].forEach(([id, key]) => {
     $(id).addEventListener('change', e => { settings[key] = e.target.checked; saveSettings(); });
   });
@@ -749,10 +838,11 @@ button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
     syncSettingsForm();
   }));
 
+  $('go-home').addEventListener('click', goHome);
   $('close-settings').addEventListener('click', () => {
     $('settings').hidden = true;
+    if (!currentGame) return;
     unlockAudio();
-    resetOrder();
     newRound();
   });
 

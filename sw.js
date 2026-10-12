@@ -1,6 +1,6 @@
 // Keeps the game working with no internet connection.
 // Bump CACHE when any app file changes so devices pick up the new version.
-const CACHE = 'gentle-games-v1';
+const CACHE = 'gentle-games-v2';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

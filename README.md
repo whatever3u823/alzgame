@@ -8,35 +8,39 @@ person can be handed a phone or tablet and play **independently**.
 
 ## How it plays
 
-1. Open the app. The whole screen says **Touch here to begin**. (This one tap is needed so the
-   phone is allowed to speak.)
-2. A short instruction appears at the top and is read out loud: *"Touch the apple."*
-3. Two big pictures fill the screen. The player touches one.
-4. Right answer: a soft chime, a green tick, a kind word (*"Well done."*), and the next turn
+1. Open the app. The caregiver sees the home page, **Choose a game**, with three big tiles:
+   **Pictures**, **Colors** and **Fill in the blank**. The game played last time has a darker
+   outline.
+2. Tap a tile and hand over the phone. That game now plays on its own, turn after turn.
+3. A short instruction appears at the top and is read out loud: *"Touch the apple."*
+4. Two big pictures fill the screen. The player touches one.
+5. Right answer: a soft chime, a green tick, a kind word (*"Well done."*), and the next turn
    starts by itself.
-5. Wrong answer: nothing bad happens. The touched answer fades away, the right one glows,
+6. Wrong answer: nothing bad happens. The touched answer fades away, the right one glows,
    and the instruction is said again. Every turn ends in success.
-6. If nothing is touched for 12 seconds, the instruction is repeated and the right answer glows.
+7. If nothing is touched for 12 seconds, the instruction is repeated and the right answer glows.
 
-There are no scores, timers, levels, menus, ads, sign-ins or back buttons.
+Once a game is running there are no scores, timers, levels, menus or back buttons on screen.
+There are never ads or sign-ins.
 
-### Activities
+### Games
 
-| Activity | Example | Notes |
+| Game | Example | Notes |
 | --- | --- | --- |
 | Pictures | "Touch the dog." | ~40 everyday objects and animals |
-| Colours | "Touch the blue one." | Colours that look alike to older eyes are never paired |
-| Old sayings and songs | "Twinkle, twinkle, little ___" → **star** / shoe | Uses long-term memory, which often lasts longest |
-| Touch the circle | One circle appears; touch it | The simplest possible version; it can't be wrong |
+| Colors | "Touch the blue one." | Colors that look alike to older eyes are never paired |
+| Fill in the blank | "Twinkle, twinkle, little ___" → **star** / shoe | Old sayings and songs. Uses long-term memory, which often lasts longest |
+| Touch the circle | One circle appears; touch it | The simplest possible version; it can't be wrong. A small link under the tiles |
 
-The game moves through the ticked activities, five turns of each.
+A game keeps going until the caregiver changes it. It never switches on its own.
 
 ## Caregiver settings
 
-Press and hold the faint circle in the **top right corner for 3 seconds**. A quick tap does
-nothing, so the player won't open it by accident. From there you can:
+On the home page, tap **Settings** at the bottom. During a game, press and hold the faint
+circle in the **top right corner for 3 seconds**. A quick tap does nothing, so the player won't
+open it by accident. From there you can:
 
-- choose which activities are used
+- go back to the home page to choose a different game
 - show 2, 3 or 4 answers (start with 2)
 - turn the spoken instructions, the praise and the chime on or off
 
@@ -88,7 +92,8 @@ These guide every change. If a new idea breaks one, it doesn't go in.
 5. **Huge targets.** Answers fill the screen. No small buttons for the player at all.
 6. **Calm and adult.** Quiet colours, real-looking pictures, no cartoon mascots or confetti.
    It should feel respectful, not childish.
-7. **Caregiver controls stay out of reach.** Hidden behind a 3-second press.
+7. **Caregiver controls stay out of reach.** The caregiver picks the game on the home page;
+   once it's running, the controls are hidden behind a 3-second press.
 8. **Works offline, no accounts, no ads, no tracking.**
 
 ## Files
