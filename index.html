@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Gentle Games</title>
+<meta name="description" content="Very simple, calm brain games for people living with dementia. No ads, no scores, no menus.">
+<meta name="theme-color" content="#E6EDF1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gentle Games">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one task per screen. A short spoken + written instruction on top,
+   two to four very large answers filling the rest. Nothing else on screen.
+   One fixed calm light look on purpose: the game must look the same every day,
+   whatever the device's dark-mode setting is. */
+:root {
+  --sky: #E6EDF1;        /* page background, a soft cool grey-blue */
+  --paper: #FFFFFF;      /* answer cards */
+  --ink: #17293A;        /* text, deep navy for strong contrast */
+  --ink-soft: #4B5D6E;   /* secondary text (caregiver screen only) */
+  --line: #B9C7D2;       /* card edges */
+  --yes: #2F8F5B;        /* the "that's right" glow */
+  --hint: #E0A100;       /* the gentle "try this one" glow */
+  --deep: #2F5D8A;       /* buttons on the caregiver screen */
+  --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--font);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button { font: inherit; color: inherit; touch-action: manipulation; }
+button:focus-visible { outline: 4px solid var(--deep); outline-offset: 4px; }
+
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding:
+    max(16px, env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+}
+
+/* ---------- Start screen: the whole screen is one button ---------- */
+#start {
+  border: 0;
+  background: var(--sky);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 5vmin;
+  text-align: center;
+}
+#start .big-dot {
+  width: min(48vmin, 320px);
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: 50%;
+  background: var(--yes);
+  box-shadow: 0 0 0 3vmin rgba(47, 143, 91, .18);
+  animation: breathe 3.2s ease-in-out infinite;
+}
+#start .label {
+  font-size: clamp(30px, 7vmin, 64px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* ---------- Game screen ---------- */
+#game { gap: 3vmin; }
+#prompt {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: 1vmin 2vmin;
+  text-align: center;
+  font-size: clamp(28px, 6.4vmin, 60px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+  cursor: pointer;
+  min-height: 1.2em;
+}
+#prompt .blank {
+  display: inline-block;
+  min-width: 2.5em;
+  border-bottom: 0.12em solid currentColor;
+  margin-left: .15em;
+}
+
+#board {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  gap: 3vmin;
+  grid-template-columns: 1fr;
+  grid-auto-rows: 1fr;
+}
+/* Portrait: answers stacked. Landscape: answers side by side. */
+#board.n4 { grid-template-columns: 1fr 1fr; }
+@media (orientation: landscape) {
+  #board.n2 { grid-template-columns: 1fr 1fr; }
+  #board.n3 { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.choice {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border: 3px solid var(--line);
+  border-radius: 28px;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2vmin;
+  cursor: pointer;
+  container-type: size;
+  transition: opacity .5s ease, transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+  box-shadow: 0 4px 0 rgba(23, 41, 58, .08);
+}
+.choice:active { transform: scale(.98); }
+.choice .pic {
+  font-size: 16vmin;                 /* fallback for older browsers */
+  font-size: min(62cqmin, 300px);
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  pointer-events: none;
+}
+.choice .word {
+  font-size: 9vmin;
+  font-size: min(26cqmin, 15cqw, 84px);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  pointer-events: none;
+}
+.choice.swatch { border-color: transparent; }
+.choice.swatch .patch {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.choice.right {
+  border-color: var(--yes);
+  box-shadow: 0 0 0 8px rgba(47, 143, 91, .35);
+  transform: scale(1.03);
+}
+.choice.right::after {
+  content: "";
+  position: absolute;
+  right: 4%;
+  top: 4%;
+  width: min(18cqmin, 72px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--yes) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 70% no-repeat;
+}
+.choice.faded { opacity: .18; pointer-events: none; }
+.board-done .choice:not(.right) { opacity: .18; }
+.choice.hint { animation: hint 1.6s ease-in-out infinite; border-color: var(--hint); }
+
+/* "Touch the circle": a single free-floating target */
+#board.touch { display: block; position: relative; }
+.target {
+  position: absolute;
+  width: min(42vmin, 300px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0;
+  background: var(--deep);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  animation: breathe 2.8s ease-in-out infinite;
+  transition: background .3s ease;
+}
+.target.right { background: var(--yes); animation: pop .6s ease forwards; }
+
+/* ---------- Caregiver corner: hold for 3 seconds to open settings ---------- */
+#corner {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  width: 64px;
+  height: 64px;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  opacity: .22;
+  z-index: 5;
+  touch-action: none;
+}
+#corner svg { width: 30px; height: 30px; }
+#corner .ring { stroke-dasharray: 113; stroke-dashoffset: 113; }
+#corner.holding { opacity: .9; }
+#corner.holding .ring { animation: fill-ring 3s linear forwards; }
+
+/* ---------- Caregiver settings ---------- */
+#settings {
+  background: var(--sky);
+  overflow-y: auto;
+  -webkit-user-select: text;
+  user-select: text;
+  z-index: 10;
+  display: block;
+}
+#settings .wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; padding-block: 8px 40px; }
+#settings h1 { margin: 0; font-size: 30px; }
+#settings h2 { margin: 0 0 8px; font-size: 20px; }
+#settings p { margin: 0; color: var(--ink-soft); font-size: 17px; line-height: 1.45; }
+#settings section { background: var(--paper); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.opt { display: flex; gap: 14px; align-items: flex-start; font-size: 19px; line-height: 1.35; cursor: pointer; }
+.opt input { width: 28px; height: 28px; flex: 0 0 auto; margin: 0; accent-color: var(--deep); }
+.opt small { display: block; color: var(--ink-soft); font-size: 16px; }
+.seg { display: flex; gap: 10px; flex-wrap: wrap; }
+.seg button {
+  min-width: 64px; padding: 12px 18px; border-radius: 12px; font-size: 20px; font-weight: 700;
+  border: 2px solid var(--line); background: var(--paper); cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--deep); border-color: var(--deep); color: var(--paper); }
+.primary {
+  padding: 18px 24px; border-radius: 16px; border: 0; background: var(--deep); color: var(--paper);
+  font-size: 22px; font-weight: 700; cursor: pointer;
+}
+.note { font-size: 15px !important; }
+
+@keyframes breathe { 0%, 100% { transform: translate(var(--tx, 0), var(--ty, 0)) scale(1); } 50% { transform: translate(var(--tx, 0), var(--ty, 0)) scale(1.05); } }
+@keyframes hint { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 161, 0, .0); } 50% { box-shadow: 0 0 0 12px rgba(224, 161, 0, .45); } }
+@keyframes pop { to { transform: translate(-50%, -50%) scale(1.25); opacity: 0; } }
+@keyframes fill-ring { to { stroke-dashoffset: 0; } }
+.target { --tx: -50%; --ty: -50%; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<button id="start" class="screen" type="button" aria-label="Touch here to begin">
+  <span class="big-dot" aria-hidden="true"></span>
+  <span class="label">Touch here to begin</span>
+</button>
+
+<main id="game" class="screen" hidden>
+  <button id="prompt" type="button" aria-live="polite"></button>
+  <div id="board"></div>
+</main>
+
+<button id="corner" type="button" aria-label="Caregiver settings (press and hold)" hidden>
+  <svg viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="18" fill="none" stroke="#17293A" stroke-width="2" opacity=".35"/>
+    <circle class="ring" cx="20" cy="20" r="18" fill="none" stroke="#17293A" stroke-width="4" transform="rotate(-90 20 20)"/>
+    <circle cx="20" cy="20" r="4" fill="#17293A"/>
+  </svg>
+</button>
+
+<div id="settings" class="screen" hidden>
+  <div class="wrap">
+    <h1>Caregiver settings</h1>
+    <p>Only you should see this screen. To open it again, press and hold the faint circle in the top right corner for 3 seconds.</p>
+
+    <section>
+      <h2>Activities</h2>
+      <p class="note">The game moves through the ones you tick, a few turns of each.</p>
+      <label class="opt"><input type="checkbox" id="act-pictures"><span>Pictures<small>“Touch the apple.” Everyday objects and animals.</small></span></label>
+      <label class="opt"><input type="checkbox" id="act-colors"><span>Colours<small>“Touch the blue one.”</small></span></label>
+      <label class="opt"><input type="checkbox" id="act-sayings"><span>Old sayings and songs<small>“Twinkle, twinkle, little …” then pick the word that finishes it.</small></span></label>
+      <label class="opt"><input type="checkbox" id="act-touch"><span>Touch the circle<small>The simplest one. A single circle appears; touching it is always right.</small></span></label>
+    </section>
+
+    <section>
+      <h2>How many answers to show</h2>
+      <p class="note">Start with 2. Only add more if it feels too easy.</p>
+      <div class="seg" id="choices-seg">
+        <button type="button" data-n="2">2</button>
+        <button type="button" data-n="3">3</button>
+        <button type="button" data-n="4">4</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sound</h2>
+      <label class="opt"><input type="checkbox" id="opt-voice"><span>Read instructions out loud<small>Uses the device's own voice. Turn the volume up.</small></span></label>
+      <label class="opt"><input type="checkbox" id="opt-praise"><span>Say something kind after a right answer<small>“Well done.” “That's it.”</small></span></label>
+      <label class="opt"><input type="checkbox" id="opt-chime"><span>Soft chime after a right answer</span></label>
+    </section>
+
+    <section>
+      <h2>Tips</h2>
+      <p class="note">Wrong answers are never punished. The touched answer fades away and the right one glows, so every turn ends in success. If nothing is touched for a while, the instruction is repeated and the right answer glows.</p>
+      <p class="note">To stop the player leaving the game by accident: on iPhone/iPad use Guided Access (Settings › Accessibility › Guided Access). On Android use App pinning (Settings › Security › App pinning).</p>
+    </section>
+
+    <button type="button" class="primary" id="close-settings">Back to the game</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ======================= Content ======================= */
+
+  const PICTURES = [
+    ['🍎', 'the apple'], ['🍌', 'the banana'], ['🍇', 'the grapes'], ['🍓', 'the strawberry'],
+    ['🥕', 'the carrot'], ['🍞', 'the bread'], ['🎂', 'the cake'], ['☕', 'the cup of tea'],
+    ['🐕', 'the dog'], ['🐈', 'the cat'], ['🐦', 'the bird'], ['🐟', 'the fish'],
+    ['🐎', 'the horse'], ['🐄', 'the cow'], ['🐖', 'the pig'], ['🐇', 'the rabbit'], ['🦆', 'the duck'],
+    ['🏠', 'the house'], ['🚗', 'the car'], ['🚌', 'the bus'], ['⛵', 'the boat'], ['✈️', 'the airplane'], ['🚂', 'the train'],
+    ['🌷', 'the flower'], ['🌳', 'the tree'], ['☀️', 'the sun'], ['🌙', 'the moon'], ['⭐', 'the star'],
+    ['☂️', 'the umbrella'], ['🔑', 'the key'], ['📖', 'the book'], ['⏰', 'the clock'], ['☎️', 'the telephone'],
+    ['🎩', 'the hat'], ['👞', 'the shoe'], ['👓', 'the glasses'], ['⚽', 'the ball'], ['🎸', 'the guitar'],
+    ['🔔', 'the bell'], ['❤️', 'the heart'], ['🎁', 'the present'],
+  ];
+
+  // Pairs that look too alike to an older eye are never shown together.
+  const COLORS = [
+    { name: 'red', hex: '#D0312D' },
+    { name: 'blue', hex: '#1F5BC4' },
+    { name: 'yellow', hex: '#F5C400' },
+    { name: 'green', hex: '#2E8B3A' },
+    { name: 'purple', hex: '#7A3E9D' },
+    { name: 'orange', hex: '#EE7A00' },
+  ];
+  const COLOR_CLASHES = new Set(['red|orange', 'orange|red', 'blue|purple', 'purple|blue', 'yellow|orange', 'orange|yellow']);
+
+  // [start of the saying, right ending, a clearly wrong ending, another clearly wrong ending]
+  const SAYINGS = [
+    ['Twinkle, twinkle, little', 'star', 'shoe', 'spoon'],
+    ['An apple a day keeps the', 'doctor away', 'bus away', 'birds away'],
+    ['Happy birthday to', 'you', 'the chair', 'Tuesday'],
+    ['Mary had a little', 'lamb', 'car', 'teapot'],
+    ['Row, row, row your', 'boat', 'hat', 'carrot'],
+    ['Jack and Jill went up the', 'hill', 'chimney', 'stairs to bed'],
+    ['Old MacDonald had a', 'farm', 'bicycle', 'piano'],
+    ['You are my', 'sunshine', 'umbrella', 'sandwich'],
+    ['There’s no place like', 'home', 'the bank', 'the moon'],
+    ['The early bird catches the', 'worm', 'train', 'cold'],
+    ['Practice makes', 'perfect', 'pancakes', 'noise'],
+    ['Better late than', 'never', 'Monday', 'lunch'],
+    ['Don’t cry over spilled', 'milk', 'paint', 'buttons'],
+    ['Every cloud has a silver', 'lining', 'spoon', 'button'],
+    ['Home sweet', 'home', 'car', 'garden'],
+    ['A penny for your', 'thoughts', 'shoes', 'umbrella'],
+    ['Take me out to the', 'ball game', 'dentist', 'post office'],
+    ['Hickory, dickory,', 'dock', 'spoon', 'teacup'],
+    ['Humpty Dumpty sat on a', 'wall', 'cake', 'boat'],
+    ['Rain, rain, go', 'away', 'shopping', 'to sleep'],
+    ['Twinkle, twinkle, little star, how I wonder what you', 'are', 'ate', 'wear'],
+    ['Let me call you', 'sweetheart', 'Wednesday', 'a taxi'],
+    ['Daisy, Daisy, give me your answer', 'do', 'please', 'tomorrow'],
+    ['Easy come, easy', 'go', 'swim', 'sing'],
+  ];
+
+  const PRAISE = ['Well done.', 'That’s it.', 'Lovely.', 'Yes, that’s right.', 'Very good.', 'Wonderful.'];
+
+  /* ======================= Settings ======================= */
+
+  const STORE_KEY = 'gentle-games:settings:v1';
+  const DEFAULTS = {
+    activities: { pictures: true, colors: true, sayings: true, touch: false },
+    choices: 2,
+    voice: true,
+    praise: true,
+    chime: true,
+  };
+  const ROUNDS_PER_ACTIVITY = 5;
+
+  function loadSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+      if (saved && typeof saved === 'object') {
+        return { ...DEFAULTS, ...saved, activities: { ...DEFAULTS.activities, ...(saved.activities || {}) } };
+      }
+    } catch (e) { /* storage unavailable: use defaults */ }
+    return structuredCloneSafe(DEFAULTS);
+  }
+  function saveSettings() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
+  }
+  function structuredCloneSafe(o) { return JSON.parse(JSON.stringify(o)); }
+
+  let settings = loadSettings();
+
+  /* ======================= Helpers ======================= */
+
+  const $ = (id) => document.getElementById(id);
+  const rand = (n) => Math.floor(Math.random() * n);
+  const pick = (arr) => arr[rand(arr.length)];
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  /* ======================= Voice & sound ======================= */
+
+  const synth = window.speechSynthesis;
+  let voice = null;
+  function chooseVoice() {
+    if (!synth) return;
+    const voices = synth.getVoices().filter(v => /^en(-|_|$)/i.test(v.lang));
+    const preferred = ['Samantha', 'Karen', 'Moira', 'Serena', 'Google US English', 'Google UK English Female', 'Microsoft Aria', 'Microsoft Jenny'];
+    voice = preferred.map(n => voices.find(v => v.name.includes(n))).find(Boolean)
+      || voices.find(v => v.localService) || voices[0] || null;
+  }
+  if (synth) { chooseVoice(); synth.addEventListener?.('voiceschanged', chooseVoice); }
+
+  function speak(text, onEnd) {
+    if (!settings.voice || !synth || !text) { if (onEnd) setTimeout(onEnd, 300); return; }
+    try {
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice) u.voice = voice;
+      u.lang = voice ? voice.lang : 'en-US';
+      u.rate = 0.82;
+      u.pitch = 1;
+      let done = false;
+      const finish = () => { if (!done) { done = true; onEnd && onEnd(); } };
+      u.onend = finish;
+      u.onerror = finish;
+      // Safety net: some devices never fire onend.
+      if (onEnd) setTimeout(finish, 1200 + text.length * 90);
+      synth.speak(u);
+    } catch (e) { if (onEnd) setTimeout(onEnd, 300); }
+  }
+
+  let audio = null;
+  function unlockAudio() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+    } catch (e) { audio = null; }
+  }
+  // A soft rising three-note chime, made on the fly (no sound files needed).
+  function chime() {
+    if (!settings.chime || !audio) return;
+    const now = audio.currentTime;
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      const t = now + i * 0.12;
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.22, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      osc.connect(gain).connect(audio.destination);
+      osc.start(t);
+      osc.stop(t + 1);
+    });
+  }
+
+  /* ======================= Rounds ======================= */
+
+  let lastTarget = null;
+
+  function pictureRound(n) {
+    const pool = PICTURES.filter(p => p[1] !== lastTarget);
+    const items = shuffle(pool).slice(0, n);
+    const answer = items[0];
+    lastTarget = answer[1];
+    return {
+      text: 'Touch ' + answer[1],
+      say: 'Touch ' + answer[1] + '.',
+      choices: shuffle(items).map(p => ({ kind: 'pic', value: p[0], label: p[1].replace(/^the /, ''), correct: p === answer })),
+    };
+  }
+
+  function colorRound(n) {
+    const answer = pick(COLORS.filter(c => c.name !== lastTarget));
+    lastTarget = answer.name;
+    const chosen = [answer];
+    for (const c of shuffle(COLORS)) {
+      if (chosen.length >= n) break;
+      if (chosen.includes(c)) continue;
+      if (chosen.some(o => COLOR_CLASHES.has(o.name + '|' + c.name))) continue;
+      chosen.push(c);
+    }
+    return {
+      text: 'Touch the ' + answer.name + ' one',
+      say: 'Touch the ' + answer.name + ' one.',
+      choices: shuffle(chosen).map(c => ({ kind: 'swatch', value: c.hex, label: c.name, correct: c === answer })),
+    };
+  }
+
+  function sayingRound(n) {
+    const s = pick(SAYINGS.filter(x => x[0] !== lastTarget));
+    lastTarget = s[0];
+    const options = [s[1], ...shuffle(s.slice(2))].slice(0, Math.min(n, 3));
+    return {
+      text: s[0],
+      blank: true,
+      say: s[0] + ' …',
+      choices: shuffle(options).map(w => ({ kind: 'word', value: w, label: w, correct: w === s[1] })),
+    };
+  }
+
+  function touchRound() {
+    return { text: 'Touch the circle', say: 'Touch the circle.', touch: true, choices: [] };
+  }
+
+  const ROUND_MAKERS = { pictures: pictureRound, colors: colorRound, sayings: sayingRound, touch: touchRound };
+
+  /* ======================= Game loop ======================= */
+
+  const promptEl = $('prompt');
+  const boardEl = $('board');
+
+  let order = [];
+  let activityIndex = 0;
+  let roundsInActivity = 0;
+  let round = null;
+  let locked = false;
+  let idleTimer = null;
+  let hintsGiven = 0;
+
+  function enabledActivities() {
+    const list = Object.keys(ROUND_MAKERS).filter(k => settings.activities[k]);
+    return list.length ? list : ['pictures'];
+  }
+
+  function nextActivity() {
+    if (roundsInActivity >= ROUNDS_PER_ACTIVITY) {
+      roundsInActivity = 0;
+      activityIndex = (activityIndex + 1) % order.length;
+    }
+    roundsInActivity++;
+    return order[activityIndex % order.length];
+  }
+
+  function resetOrder() {
+    order = enabledActivities();
+    activityIndex = 0;
+    roundsInActivity = 0;
+  }
+
+  function newRound() {
+    clearTimeout(idleTimer);
+    hintsGiven = 0;
+    locked = false;
+    const activity = nextActivity();
+    round = ROUND_MAKERS[activity](settings.choices);
+    render();
+    speak(round.say);
+    armIdleHint();
+  }
+
+  function render() {
+    promptEl.textContent = round.text;
+    if (round.blank) {
+      const blank = document.createElement('span');
+      blank.className = 'blank';
+      blank.setAttribute('aria-hidden', 'true');
+      promptEl.appendChild(blank);
+    }
+    boardEl.className = '';
+    boardEl.replaceChildren();
+
+    if (round.touch) {
+      boardEl.className = 'touch';
+      const t = document.createElement('button');
+      t.type = 'button';
+      t.className = 'target';
+      t.setAttribute('aria-label', 'circle');
+      // Keep the circle well away from the edges.
+      t.style.left = (28 + rand(45)) + '%';
+      t.style.top = (25 + rand(50)) + '%';
+      t.addEventListener('click', () => onChoose(t, true));
+      boardEl.appendChild(t);
+      round.targetEl = t;
+      return;
+    }
+
+    boardEl.classList.add('n' + round.choices.length);
+    round.choices.forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.setAttribute('aria-label', c.label);
+      if (c.kind === 'pic') {
+        const s = document.createElement('span'); s.className = 'pic'; s.textContent = c.value; b.appendChild(s);
+      } else if (c.kind === 'swatch') {
+        b.classList.add('swatch');
+        const s = document.createElement('span'); s.className = 'patch'; s.style.background = c.value; b.appendChild(s);
+      } else {
+        const s = document.createElement('span'); s.className = 'word'; s.textContent = c.value; b.appendChild(s);
+      }
+      b.addEventListener('click', () => onChoose(b, c.correct));
+      c.el = b;
+      boardEl.appendChild(b);
+    });
+  }
+
+  function correctEl() {
+    if (round.touch) return round.targetEl;
+    const c = round.choices.find(x => x.correct);
+    return c && c.el;
+  }
+
+  function onChoose(el, isCorrect) {
+    if (locked) return;
+    unlockAudio();
+    if (isCorrect) {
+      locked = true;
+      clearTimeout(idleTimer);
+      el.classList.remove('hint');
+      el.classList.add('right');
+      boardEl.classList.add('board-done');
+      chime();
+      const after = () => setTimeout(newRound, 700);
+      if (settings.praise) setTimeout(() => speak(pick(PRAISE), after), 250);
+      else setTimeout(newRound, 1600);
+    } else {
+      // Never a buzzer, never a red cross: the touched answer quietly fades,
+      // the right one glows, and the instruction is said again.
+      el.classList.add('faded');
+      const right = correctEl();
+      if (right) right.classList.add('hint');
+      speak(round.say);
+      armIdleHint();
+    }
+  }
+
+  // If nothing happens for a while, repeat the instruction and point the way.
+  // Give up after two reminders so the device does not keep talking to an empty room.
+  function armIdleHint() {
+    clearTimeout(idleTimer);
+    if (hintsGiven >= 2) return;
+    idleTimer = setTimeout(() => {
+      if (locked || !round || !$('settings').hidden) return;
+      hintsGiven++;
+      const right = correctEl();
+      if (right) right.classList.add('hint');
+      speak(round.say);
+      armIdleHint();
+    }, hintsGiven === 0 ? 12000 : 25000);
+  }
+
+  promptEl.addEventListener('click', () => { if (round && !locked) { speak(round.say); armIdleHint(); } });
+
+  /* ======================= Start ======================= */
+
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) { /* not available */ }
+  }
+
+  $('start').addEventListener('click', () => {
+    unlockAudio();
+    // On iPhone the voice only works if it is first used straight from a touch.
+    if (synth) { try { synth.cancel(); synth.speak(new SpeechSynthesisUtterance('')); } catch (e) {} }
+    keepAwake();
+    $('start').hidden = true;
+    $('game').hidden = false;
+    $('corner').hidden = false;
+    resetOrder();
+    newRound();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !$('game').hidden) {
+      keepAwake();
+      if (round && !locked && $('settings').hidden) { speak(round.say); hintsGiven = 0; armIdleHint(); }
+    } else if (synth) {
+      synth.cancel();
+    }
+  });
+
+  // No long-press menus, no pinch zoom, no accidental text selection.
+  document.addEventListener('contextmenu', e => { if ($('settings').hidden) e.preventDefault(); });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+
+  /* ======================= Caregiver corner ======================= */
+
+  const corner = $('corner');
+  let holdTimer = null;
+  function startHold(e) {
+    e.preventDefault();
+    corner.classList.add('holding');
+    holdTimer = setTimeout(() => { endHold(); openSettings(); }, 3000);
+  }
+  function endHold() {
+    clearTimeout(holdTimer);
+    corner.classList.remove('holding');
+  }
+  corner.addEventListener('pointerdown', startHold);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => corner.addEventListener(t, endHold));
+  corner.addEventListener('click', e => e.preventDefault());
+
+  function openSettings() {
+    clearTimeout(idleTimer);
+    if (synth) synth.cancel();
+    syncSettingsForm();
+    $('settings').hidden = false;
+    $('settings').scrollTop = 0;
+  }
+
+  function syncSettingsForm() {
+    for (const k of Object.keys(ROUND_MAKERS)) $('act-' + k).checked = !!settings.activities[k];
+    $('opt-voice').checked = settings.voice;
+    $('opt-praise').checked = settings.praise;
+    $('opt-chime').checked = settings.chime;
+    document.querySelectorAll('#choices-seg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === settings.choices)));
+  }
+
+  for (const k of Object.keys(ROUND_MAKERS)) {
+    $('act-' + k).addEventListener('change', e => {
+      settings.activities[k] = e.target.checked;
+      if (!Object.values(settings.activities).some(Boolean)) { settings.activities[k] = true; e.target.checked = true; }
+      saveSettings();
+    });
+  }
+  [['opt-voice', 'voice'], ['opt-praise', 'praise'], ['opt-chime', 'chime']].forEach(([id, key]) => {
+    $(id).addEventListener('change', e => { settings[key] = e.target.checked; saveSettings(); });
+  });
+  document.querySelectorAll('#choices-seg button').forEach(b => b.addEventListener('click', () => {
+    settings.choices = +b.dataset.n;
+    saveSettings();
+    syncSettingsForm();
+  }));
+
+  $('close-settings').addEventListener('click', () => {
+    $('settings').hidden = true;
+    unlockAudio();
+    resetOrder();
+    newRound();
+  });
+
+  /* ======================= Offline support ======================= */
+
+  if ('serviceWorker' in navigator && /^https:|^http:\/\/localhost/.test(location.href)) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+})();
+</script>
+</body>
+</html>
